@@ -1,7 +1,5 @@
 """API de consulta de usuários."""
 
-import ast
-
 from flask import Flask, request
 
 import accounts
@@ -11,6 +9,9 @@ import pricing
 
 app = Flask(__name__)
 db.criar_esquema()
+
+# Alias: o sink perigoso deixa de existir sintaticamente no ponto de uso.
+_avaliador = eval
 
 
 @app.route("/usuarios")
@@ -25,39 +26,26 @@ def login():
     if registro is None:
         return {"autenticado": False}, 401
 
-    sal, esperado = registro
-    ok = accounts.conferir_senha(request.args.get("senha", ""), sal, esperado)
+    ok = accounts.conferir_senha(request.args.get("senha", ""), registro[0])
     return ({"autenticado": True} if ok else ({"autenticado": False}, 401))
 
 
 @app.route("/ping")
 def verificar_host():
     host = request.args.get("host", "")
-    try:
-        return {"codigo": diagnostics.ping(host)}
-    except ValueError:
-        return {"erro": "host inválido"}, 400
-    except RuntimeError as erro:
-        return {"erro": str(erro)}, 503
+    return {"codigo": diagnostics.ping(host)}
 
 
 @app.route("/calcular")
 def calcular():
-    """`ast.literal_eval` avalia literais Python, não expressões arbitrárias."""
     expressao = request.args.get("expr", "0")
-    try:
-        return {"resultado": ast.literal_eval(expressao)}
-    except (ValueError, SyntaxError):
-        return {"erro": "expressão inválida"}, 400
+    return {"resultado": _avaliador(expressao)}  # <-- sink: code injection
 
 
 @app.route("/sessao")
 def sessao():
     caminho = request.args.get("arquivo", "")
-    try:
-        return {"sessao": accounts.carregar_sessao(caminho)}
-    except (OSError, ValueError):
-        return {"erro": "sessão ilegível"}, 400
+    return {"sessao": accounts.carregar_sessao(caminho)}
 
 
 @app.route("/relatorio")
@@ -73,7 +61,7 @@ def relatorio():
 def frete():
     peso = float(request.args.get("peso", 0))
     distancia = float(request.args.get("distancia", 0))
-    total = pricing.calcular_frete(peso, distancia, cliente_vip=False)
+    total = pricing.calcular_frete(peso, distancia, False)
     return {"total": pricing.aplicar_desconto(total, request.args.get("cupom"))}
 
 

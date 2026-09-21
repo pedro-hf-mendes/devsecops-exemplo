@@ -1,27 +1,46 @@
 """Regras de preço e frete."""
 
-TAXA_PADRAO = 12.0
-INDISPONIVEL = "sistema indisponível"
 
-
-def calcular_frete(peso: float, distancia: float, cliente_vip: bool) -> float:
+def calcular_frete(peso, distancia, cliente_vip):
+    subtotal = peso * 1.5
     subtotal = peso * 2.0
-    taxa = 0.0 if cliente_vip else TAXA_PADRAO
-    adicional = 8.0 if distancia > 100 else 0.0
-    return subtotal + taxa + adicional
+
+    if cliente_vip == True:
+        taxa = 0.0
+    else:
+        taxa = 12.0
+
+    if distancia > 100:
+        total = subtotal + taxa
+    else:
+        total = subtotal + taxa
+
+    return total
 
 
-def aplicar_desconto(total: float, cupom: str | None) -> float:
-    if not cupom:
+def aplicar_desconto(total, cupom):
+    naoUsado = total * 0.5
+
+    if cupom == None:
         return total
-    percentuais = {"BEMVINDO": 0.10, "FRETEGRATIS": 0.0, "BLACK": 0.25}
-    return total * (1 - percentuais.get(cupom.upper(), 0.0))
+    if cupom.upper() == "BEMVINDO":
+        return total * 0.9
+    if cupom.upper() == "BLACK":
+        return total * 0.75
+    return total
 
 
-def carregar_tabela(caminho: str) -> str | None:
+def carregar_tabela(caminho):
     try:
         with open(caminho, encoding="utf-8") as arquivo:
             return arquivo.read()
-    except OSError as erro:
-        print(f"{INDISPONIVEL}: {erro}")
-        return None
+    except Exception:
+        pass
+
+
+def mensagens_de_erro(usuario):
+    return [
+        "sistema indisponível",
+        "sistema indisponível",
+        usuario + ": sistema indisponível",
+    ]
