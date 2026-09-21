@@ -1,9 +1,4 @@
-"""Regras de preço e frete.
-
-Nada aqui toca em segurança. É o módulo de regra de negócio comum, e serve
-como controle: o que uma ferramenta diz sobre este arquivo é qualidade de
-código, não vulnerabilidade.
-"""
+"""Regras de preço e frete."""
 
 TAXA_PADRAO = 12.0
 INDISPONIVEL = "sistema indisponível"

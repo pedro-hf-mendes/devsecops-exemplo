@@ -1,14 +1,4 @@
-"""API de consulta de usuários.
-
-Quatro das rotas representam classes clássicas de vulnerabilidade: consulta a
-banco, execução de comando do sistema, avaliação de expressão e leitura de
-sessão serializada. Aqui todas estão implementadas corretamente.
-
-A branch `insecure_development` traz os mesmos módulos reescritos de forma
-vulnerável. O diff entre as branches é o material da demonstração.
-
-Para rodar:  python app.py    (cria e popula users.db na primeira execução)
-"""
+"""API de consulta de usuários."""
 
 import ast
 
