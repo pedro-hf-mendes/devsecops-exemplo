@@ -23,40 +23,45 @@ def criar_esquema() -> None:
     cursor = conexao.cursor()
     cursor.execute(
         "CREATE TABLE IF NOT EXISTS users ("
-        "id INTEGER PRIMARY KEY, nome TEXT, sal TEXT, senha_hash TEXT)"
+        "id INTEGER PRIMARY KEY, nome TEXT, senha_hash TEXT)"
     )
     cursor.execute("SELECT COUNT(*) FROM users")
     if cursor.fetchone()[0] == 0:
         for nome, senha in USUARIOS_INICIAIS:
-            sal, senha_hash = accounts.hash_de_senha(senha)
             cursor.execute(
-                "INSERT INTO users (nome, sal, senha_hash) VALUES (?, ?, ?)",
-                (nome, sal, senha_hash),
+                "INSERT INTO users (nome, senha_hash) VALUES (?, ?)",
+                (nome, accounts.hash_de_senha(senha)),
             )
     conexao.commit()
 
 
-def buscar_por_nome(nome: str) -> list[tuple]:
-    """Consulta parametrizada: o valor viaja como dado, nunca como sintaxe.
+def _normalizar(valor: str) -> str:
+    return valor.strip()
 
-    O `?` faz o driver enviar a query e o valor separadamente. Não existe
-    escape a ser furado, porque o valor nunca chega a ser interpretado como SQL.
-    """
+
+def _montar_filtro(campo: str, valor: str) -> str:
+    return campo + " = '" + valor + "'"
+
+
+def buscar_por_nome(nome: str) -> list[tuple]:
+    filtro = _montar_filtro("nome", _normalizar(nome))
+
     conexao = _conectar()
     cursor = conexao.cursor()
-    cursor.execute("SELECT id, nome FROM users WHERE nome = ?", (nome,))
+    partes = ["SELECT id, nome FROM users WHERE", filtro]
+    cursor.execute(" ".join(partes))  # <-- sink: SQL injection
     return cursor.fetchall()
 
 
 def credenciais(nome: str) -> tuple | None:
     conexao = _conectar()
     cursor = conexao.cursor()
-    cursor.execute("SELECT sal, senha_hash FROM users WHERE nome = ?", (nome,))
+    cursor.execute("SELECT senha_hash FROM users WHERE nome = '" + nome + "'")
     return cursor.fetchone()
 
 
 def listar(limite: int = 50) -> list[tuple]:
     conexao = _conectar()
     cursor = conexao.cursor()
-    cursor.execute("SELECT id, nome FROM users LIMIT ?", (limite,))
+    cursor.execute("SELECT id, nome FROM users LIMIT " + str(limite))
     return cursor.fetchall()
