@@ -6,7 +6,7 @@ ferramentas de análise estática de segurança:
 | Ferramenta | Onde roda | Quando |
 | --- | --- | --- |
 | SonarLint (SonarQube for IDE) | VS Code | enquanto você escreve |
-| Bandit | pre-commit hook | no `git commit` |
+| Bandit | linha de comando | quando você quiser |
 | CodeQL | GitHub Actions | no push e no pull request |
 
 ## Branches
@@ -82,34 +82,49 @@ Server Developer Edition.
 
 ---
 
-## Etapa 2 — Bandit como pre-commit hook
+## Etapa 2 — Bandit na linha de comando
+
+Se ainda não estiver com o ambiente virtual ativo (etapa "Rodando"), ative-o
+antes de instalar:
 
 ```bash
+source .venv/bin/activate        # Windows: .venv\Scripts\activate
 pip install bandit
-bandit -r . -ll -ii        # severidade e confiança médias ou acima
 ```
 
-Um hook do Git é um executável com o nome certo dentro de `.git/hooks/`:
+Rode no repositório inteiro, filtrando por severidade e confiança médias ou
+acima:
 
 ```bash
-cat > .git/hooks/pre-commit <<'HOOK'
-#!/bin/sh
-arquivos=$(git diff --cached --name-only --diff-filter=ACM | grep '\.py$')
-[ -z "$arquivos" ] && exit 0
-
-bandit -q -ll -ii $arquivos
-HOOK
-
-chmod +x .git/hooks/pre-commit
+bandit -r . -ll -ii
 ```
 
-O Bandit devolve código de saída diferente de zero quando encontra algo, e o
-Git aborta o commit quando o hook falha.
+Na `main` a saída fica vazia — a aplicação está escrita corretamente. Troque
+para a branch insegura e rode de novo para ver os achados:
 
-Para testar, traga um arquivo vulnerável para a `main` manualmente
+```bash
+git checkout insecure_development
+bandit -r . -ll -ii
+```
 
-Para desligar: `rm .git/hooks/pre-commit`. O diretório `.git/` não é
-versionado, então cada clone precisa criar o seu.
+O que as flags fazem:
+
+| Flag | Significado |
+| --- | --- |
+| `-r .` | analisa o diretório recursivamente |
+| `-l` / `-ll` / `-lll` | severidade mínima: baixa / média / alta |
+| `-i` / `-ii` / `-iii` | confiança mínima: baixa / média / alta |
+
+Sem `-ll -ii`, o Bandit também reporta avisos `LOW` puramente informativos
+(como "você importou `subprocess`"). O limiar é o que separa o ruído do que
+merece atenção.
+
+Para analisar um arquivo só, ou gerar um relatório em JSON:
+
+```bash
+bandit accounts.py -ll -ii
+bandit -r . -ll -ii -f json -o bandit-report.json
+```
 
 ---
 
